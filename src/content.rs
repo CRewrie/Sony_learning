@@ -18,6 +18,9 @@ pub struct Topic {
     pub title_es: String,
     pub summary: String,
     pub explanation: String,
+    /// Ausführliche Regel: Verwendung, Beispiele, typische Fehler, Merkhilfen.
+    #[serde(default)]
+    pub details: String,
     pub items: Vec<Item>,
 }
 

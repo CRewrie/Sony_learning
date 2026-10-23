@@ -231,7 +231,15 @@ function ruleCard(t, intro) {
       <div class="es">${esc(t.title_es)}</div>
       <div class="summary">${esc(t.summary)}</div>
       <div class="explanation table-wrap">${t.explanation}</div>
-      <p class="tip">💡 Lies die Regel einmal aufmerksam, dann geht’s direkt ans Anwenden. Das Abrufen festigt sie besser als langes Lesen.</p>
+      ${
+        t.details
+          ? `<details class="more" ${intro ? "" : "open"}>
+               <summary>Ausführlich: Verwendung, Beispiele, typische Fehler, Merkhilfen</summary>
+               <div class="explanation table-wrap">${t.details}</div>
+             </details>`
+          : ""
+      }
+      <p class="tip">💡 Lies die Regel einmal aufmerksam, dann geht’s direkt ans Anwenden. Das Abrufen festigt sie besser als langes Lesen. Bei Fehlern bekommst du die ausführliche Regel automatisch angezeigt.</p>
       <div class="actions">
         <button class="btn big" id="go">${intro ? "Los geht’s" : "Dieses Thema üben"} →</button>
         <button class="btn ghost" id="back">Zurück</button>
@@ -476,7 +484,7 @@ async function submit() {
   }
 
   if (res.verdict === "wrong") {
-    S.mistakes.push({ prompt: it.kind === "order" || it.kind === "translate" ? it.prompt : it.prompt.replace("___", "…"), yours: answer, right: res.sentence, explain: res.explain, notes: res.notes || [] });
+    S.mistakes.push({ prompt: it.kind === "order" || it.kind === "translate" ? it.prompt : it.prompt.replace("___", "…"), yours: answer, right: res.sentence, explain: res.explain, notes: res.notes || [], topic: it.topic });
     // Erneut abfragen, ein paar Karten später (Wiederholung, bis es sitzt).
     if (it.tries < 2) {
       const again = { ...it, relearn: true, tries: it.tries + 1 };
@@ -489,6 +497,17 @@ async function submit() {
   }
 
   showFeedback(it, res, answer);
+}
+
+// Vollständige Regel der Lektion; bei falscher Antwort aufgeklappt.
+function ruleBox(topicId, open) {
+  const t = overview?.topics.find((x) => x.id === topicId);
+  if (!t) return "";
+  return `
+    <details class="rule-box" ${open ? "open" : ""}>
+      <summary>📘 Regel nachlesen: ${esc(t.title)}</summary>
+      <div class="explanation table-wrap">${t.explanation}${t.details || ""}</div>
+    </details>`;
 }
 
 function showFeedback(it, res, answer) {
@@ -527,6 +546,7 @@ function showFeedback(it, res, answer) {
       ${res.de && (it.kind === "order" || it.kind === "translate" || !settings.get("showDe", true)) ? `<div class="muted small">🇩🇪 ${esc(res.de)}</div>` : ""}
       ${res.explain ? `<p class="explain small">${v === "correct" ? "✓ " : "📘 Regel: "}${esc(res.explain)}</p>` : ""}
       ${needRetype ? `<input class="answer-input" id="retype" autocomplete="off" spellcheck="false" placeholder="Zum Einprägen: Lösung abtippen …">${accentBar()}` : ""}
+      ${v !== "correct" ? ruleBox(it.topic, v === "wrong") : ""}
     </div>`;
   $("#speak").onclick = () => speak(res.sentence);
   if (settings.get("autoSpeak", true)) speak(res.sentence);
@@ -572,6 +592,7 @@ function renderSummary() {
   const msg =
     acc >= 90 ? "¡Increíble! Das sitzt." : acc >= 70 ? "¡Muy bien! Starke Runde." : acc >= 50 ? "Gute Arbeit, Fehler sind Lernchancen." : "Jeder Fehler hilft beim Lernen. Die schwierigen Übungen kommen bald wieder.";
   if (acc >= 80) confetti(90);
+  const errTopics = [...new Set(S.mistakes.map((m) => m.topic))].map((id) => overview.topics.find((t) => t.id === id)).filter(Boolean);
 
   app.innerHTML = `
     <article class="card">
@@ -598,6 +619,14 @@ function renderSummary() {
                .join("")}</ul>`
           : `<p class="muted" style="text-align:center">Keine Fehler, perfekte Runde!</p>`
       }
+      ${
+        errTopics.length
+          ? `<h3 style="margin-top:18px">Regeln wiederholen</h3>
+             <div class="row" style="margin-top:8px">${errTopics
+               .map((t) => `<button class="btn ghost" data-rule="${t.id}">📘 ${esc(t.title)}</button>`)
+               .join("")}</div>`
+          : ""
+      }
       <div class="actions" style="justify-content:center">
         <button class="btn big" id="again">Weiter üben</button>
         <button class="btn ghost" id="home">Übersicht</button>
@@ -606,6 +635,7 @@ function renderSummary() {
     </article>`;
   $("#again").onclick = () => startSession(S.topic);
   $("#home").onclick = renderHome;
+  app.querySelectorAll("[data-rule]").forEach((b) => (b.onclick = () => renderTopic(b.dataset.rule)));
   $("#again").focus();
 }
 

@@ -161,6 +161,13 @@ main { max-width: 900px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 32px) 64
 .explanation li { margin: 4px 0; }
 .table-wrap { overflow-x: auto; }
 .tip { margin-top: 14px; font-size: .9rem; color: var(--muted); }
+.explanation h4 { margin: 18px 0 6px; font-size: 1rem; color: var(--ink); }
+.explanation .memo { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); }
+.explanation table td i { color: var(--muted); }
+details.more { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+details > summary { cursor: pointer; font-weight: 700; color: var(--accent); padding: 4px 0; }
+details.rule-box { margin-top: 14px; padding: 10px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); }
+details.rule-box .explanation { max-height: 55vh; overflow: auto; font-size: .95rem; }
 
 /* ---------- Üben ---------- */
 .practice-top { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
